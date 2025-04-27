@@ -1,0 +1,205 @@
+
+
+(*
+
+  ITT8060 -- Advanced Programming 2024
+  Department of Software Science
+  Tallinn University of Technology
+  ------------------------------------
+
+  Coursework 2: Operations on lists and tuples, recursion,
+                combination of functions
+
+  ------------------------------------
+  Name: Syed Muhammad Hamza Bacha
+  Tallinn University of Technology Student ID
+  or Uni-ID: Student (regular) - 246076IVSM
+  ------------------------------------
+
+
+  Answer the questions below.  You answers to all questions should be
+  correct F# code written after the question. This file is an F#
+  script file, it should be possible to load the whole file at
+  once. If you can't then you have introduced a syntax error
+  somewhere.
+
+  This coursework will be graded. It has to be submitted to the
+  https://gitlab.cs.taltech.ee repository itt8060-2023 under your UniID,
+  into a file coursework2/coursework2.fsx.
+
+  NB! Note that the solution has to be an F# script file that can in one go
+  be loaded to the interpreter without any syntax errors!
+
+  If the location, extension or name of the submission file or directory is incorrect
+  it will not be graded.
+
+  Deadline for submitting the solution is October 1, 2023.
+*)
+
+// You are given a type BibliographyItem that has the following structure:
+// string list * string * (int * int) * int
+// The meaning of the tuple elements is as follows:
+// * The first field represents the list of author names where each name is in the format
+//   "Lastname, Firstname1 Firstname2" (i.e. all first names are after comma separated by spaces)
+// * The second field represents the title of the publication
+// * The third field represents a pair containing the starting page number and ending page number
+//   of the paper.
+// * The fourth field represents the year of publication
+
+type BibliographyItem = string list * string * (int * int) * int
+
+// Note that this representation of BibliographyItem is used explicitly to familiarize you to tuples
+// In the real world it'd be preferrable to use a Record type
+
+// 1. Create a value bibliographyData : BibliographyItem list that contains
+// at least 7 different publications on your favourite topic from
+// https://dblp.uni-trier.de/
+// Please note that you need not read the papers, just pick 7 papers that look
+// interesting to you from the database.
+
+   let bibliographyData: BibliographyItem list =  [
+        (["Chung, Sang-Hwa"; "Oh, Soo-Cheol "; "Park, Sejin ";"Jang,Hankook "; "Ha, Chi-Jung "], "A CC-NUMA Prototype Card for SCI-Based PC Clustering",(1, 375), 2000); 
+        (["Jongil, Lim"; "Seokju ,Lee"; "Girma, Tewolde";" Jaerock ,Kwon"], "Indoor Localization and Navigation for a Mobile Robot Equipped with Rotating Ultrasonic Sensors Using a Smartphone as the Robot's Brain",(1, 11), 2016); 
+        (["Aakash, M"; "Qasim ,M"; "Gunasundari, C"], "Mathematical modeling and simulation of SEIR model for COVID-19 outbreak: A case study of Trivandrum",(1, 33), 2023); 
+        (["Abishek, M"; "Amutha, Prabha"; "Jitendra, Kumar, Goyal"], "Voltage Regulation of Auxiliary Power Units for Electric Vehicle Applications Using Fuzzy Logic Controlle",(1, 15), 2024); 
+        (["Kingma, Diederik P."; "Ba, Jimmy"], "A Method for Stochastic Optimization", (1, 13),2015);
+        (["He, Kaiming"; "Zhang, Xiangyu"; "Ren, Shaoqing"; "Sun, Jian"],"Deep Residual Learning for Image Recognition",(770, 778), 2016);
+        (["Radford, Alec"; "Wu, Jeffrey"; "Clark, Jack"],"Language Models are Few-Shot Learners",(1877, 1901),2020);    
+        ]
+
+
+
+// 2. Make a function compareLists : string list -> string list -> int that
+// takes two string lists and returns
+// * Less than zero in case the first list precedes the second in the sort order;
+// * Zero in case the first list and second list occur at the same position in the sort order;
+// * Greater than zero in case the first list follows the second list in the sort order;
+// You need to use the support honouring the default culture for ordering strings, i.e. the built in
+// compare does not work properly by default. Look at the
+// documentation of the .Net comparison for strings: System.String.Compare
+// If the first authors are the same
+// then the precedence should be determined by the next author.
+// Please note that your implementation should be recursive over the input lists.
+//
+// The sort order in .Net is defined using System.Globalization.CultureInfo:
+// https://docs.microsoft.com/en-us/dotnet/api/system.globalization
+// Please note that your solution should not force a particular sort order!
+//
+// Hint:
+// You can change the culture for testing with the following lines
+// open System.Globalization
+// CultureInfo.CurrentCulture <- CultureInfo("en-US")
+//
+// Fun fact:
+// System.String.Compare and System.Text package members are affected by the
+// CultureInfo settings, but System.Text.RegularExpressions
+// uses ordinal ordering regardless of the CultureInfo settings.
+
+open System
+open System.Globalization
+
+    let rec compareLists (list1: string list) (list2: string list): int =
+        match (list1, list2) with
+         | ([], []) -> 0  
+         | ([], _) -> -1  
+         | (_, []) -> 1   
+             | (h1::t1, h2::t2) -> 
+         
+        let comparisonResult = String.Compare(h1, h2, CultureInfo.CurrentCulture, CompareOptions.None)
+        if comparisonResult <> 0 then
+            comparisonResult  
+        else
+         
+            compareLists t1 t2
+
+
+// 3. Make a function
+// compareAuthors : BibliographyItem -> BibliographyItem -> int
+// that takes two instances of bibliography items and compares them according to the authors.
+// Use your solution from task 2.
+       let compareAuthors (item1: BibliographyItem) (item2: BibliographyItem) : int =
+            let (authors1, _, _, _) = item1
+            let (authors2, _, _, _) = item2
+            compareLists authors1 authors2
+
+// 4. Make a function
+// compareAuthorsNumPages : BibliographyItem -> BibliographyItem -> int
+// that takes two instances of bibliography items and compares them according to the authors
+// and if the authors are the same then according to the number of pages in the publication.
+
+        let compareAuthorsNumPages (item1: BibliographyItem) (item2: BibliographyItem) : int =
+   
+          let authorComparison = compareAuthors item1 item2
+          if authorComparison <> 0 then
+             authorComparison   
+           else
+        
+             let (_, _, (startPage1, endPage1), _) = item1
+             let (_, _, (startPage2, endPage2), _) = item2
+             let pages1 = endPage1 - startPage1 + 1
+             let pages2 = endPage2 - startPage2 + 1
+             compare pages1 pages2   
+
+// 5. Make a function
+// sortBibliographyByNumPages : BibliographyItem list -> BibliographyItem list
+// That returns a bibliography sorted according to the number of pages in the
+// publication in ascending order.
+// If two items are at the same level in the sort order, their order should be preserved.
+
+         let sortBibliographyByNumPages (bibliography: BibliographyItem list) : BibliographyItem list =
+    
+            List.sortBy (fun (_, _, (startPage, endPage), _) -> endPage - startPage + 1) bibliography
+
+// 6. Make a function
+// sortBibliographyByAuthorNumPages : BibliographyItem list -> BibliographyItem list
+// That returns a bibliography sorted according to the authors and number of pages in
+// the publication in ascending order.
+// If two items are at the same level in the sort order, their order should be preserved.
+          let sortBibliographyByAuthorNumPages (bibliography: BibliographyItem list) : BibliographyItem list =
+             List.sortWith compareAuthorsNumPages bibliography
+
+// 7. Make a function
+// groupByAuthor : BibliographyItem list -> (string * BibliographyItem list) list
+// where the return list contains pairs where the first element is the name of a single
+// author and the second element a list of bibliography items that the author has co-authored.
+//
+// If the input list contains a bibliography item b which has a as an author, then
+// the result list must contain a pair (a, xs) such that b is an element of xs.
+//
+// If the result list contains a pair (a, xs), then, for every bibliography item b in xs,
+// it must be the case that a is an author of b and b was in the input list.
+//
+// There cannot be two items (a1, xs1) and (a2, xs2) in the result list such that a1 = a2.
+//
+// The number of pairs in the output list must be equal to the number of distinct authors in
+// all bibliography items.
+//
+// The number of elements in xs in each item (a, xs) is equal to the number of BibliographyItems
+// where a is among the authors.
+        
+            let groupByAuthor (bibliography: BibliographyItem list) : (string * BibliographyItem list) list =
+                
+                let authorMap =
+                    bibliography 
+                    |> List.fold (fun acc (authors, title, pages, year) ->
+                        
+                        authors |> List.fold (fun innerAcc author ->
+                           
+                            if Map.containsKey author innerAcc then
+                                
+                                Map.add author ((authors, title, pages, year) :: innerAcc.[author]) innerAcc
+                            else
+                          
+                                Map.add author [(authors, title, pages, year)] innerAcc
+                        ) acc
+                    ) Map.empty
+
+                
+                authorMap |> Map.toList
+
+
+
+
+
+
+
